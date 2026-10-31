@@ -1,0 +1,88 @@
+// YMJ BSD Community Orchestra — Prisma schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                String   @id @default(cuid())
+  email             String   @unique
+  password          String?  // null when signed up via Google
+  name              String
+  whatsapp          String
+  ageCategory       String   // "JUNIOR" | "COMMUNITY"
+  age               Int
+  instrument        String   // e.g. "Violin", "Flute", "Timpani"
+  instrumentSection String   // "STRINGS" | "WOODWINDS" | "BRASS" | "PERCUSSION"
+  experienceYears   Float
+  address           String
+  photoUrl          String?  // path to uploaded profile photo
+  nameTagUrl        String?  // path to generated name tag image
+  role              String   @default("MEMBER") // "MEMBER" | "ADMIN"
+  status            String   @default("VERIFIED") // "PENDING" | "VERIFIED" | "REJECTED"
+  provider          String   @default("EMAIL") // "EMAIL" | "GOOGLE"
+  emailVerified     Boolean  @default(true)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([instrumentSection])
+  @@index([ageCategory])
+  @@index([role])
+}
+
+model SheetMusic {
+  id          String   @id @default(cuid())
+  title       String
+  composer    String
+  instrument  String   // matches User.instrument or "ALL"
+  section     String   // "STRINGS" | "WOODWINDS" | "BRASS" | "PERCUSSION" | "ALL"
+  category    String   // "JUNIOR" | "COMMUNITY" | "ALL"
+  fileUrl     String
+  fileType    String   @default("PDF") // "PDF" | "IMG" | "LINK"
+  difficulty  String   @default("INTERMEDIATE")
+  description String?
+  createdAt   DateTime @default(now())
+
+  @@index([section])
+  @@index([instrument])
+}
+
+model Announcement {
+  id        String   @id @default(cuid())
+  title     String
+  content   String
+  eventDate DateTime
+  type      String   // "PRACTICE" | "CONCERT" | "GENERAL" | "AUDITION"
+  createdAt DateTime @default(now())
+}
+
+model WhatsAppGroup {
+  id          String   @id @default(cuid())
+  name        String
+  section     String   // "STRINGS" | "WOODWINDS" | "BRASS" | "PERCUSSION" | "GENERAL" | "JUNIOR" | "COMMUNITY"
+  description String?
+  link        String
+  createdAt   DateTime @default(now())
+}
+
+model Video {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  videoType   String   // "FILE" | "YOUTUBE" | "VIMEO"
+  videoUrl    String   // file path or external URL
+  thumbnailUrl String?
+  eventDate   DateTime @default(now())
+  createdAt   DateTime @default(now())
+}
+
+model Setting {
+  id                 String  @id @default("singleton")
+  googleSheetWebhook String?
+  updatedAt          DateTime @updatedAt
+}

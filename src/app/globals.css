@@ -1,0 +1,278 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+/* ----------------------------------------------------------------
+   YMJ BSD Community Orchestra — Visual Identity
+   Navy blue (#0A1F44) + Gold (#C9A227) classical orchestral palette
+----------------------------------------------------------------- */
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+
+  /* YMJ brand palette (exposed to Tailwind as utilities) */
+  --color-navy-50: #f3f5fa;
+  --color-navy-100: #e3e8f3;
+  --color-navy-200: #c6d0e6;
+  --color-navy-300: #93a6c9;
+  --color-navy-400: #5c79a8;
+  --color-navy-500: #385a85;
+  --color-navy-600: #28466b;
+  --color-navy-700: #1d3454;
+  --color-navy-800: #122140;
+  --color-navy-900: #0a1f44;
+  --color-navy-950: #06152c;
+
+  --color-gold-50: #fdf9ec;
+  --color-gold-100: #f9efcb;
+  --color-gold-200: #f3dd92;
+  --color-gold-300: #ecc65a;
+  --color-gold-400: #d9ad36;
+  --color-gold-500: #c9a227;
+  --color-gold-600: #a8821d;
+  --color-gold-700: #86621b;
+  --color-gold-800: #6e4e1c;
+  --color-gold-900: #5e411c;
+
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+:root {
+  --radius: 0.625rem;
+
+  /* Cream/ivory background for that classical orchestral feel */
+  --background: oklch(0.985 0.005 80);
+  --foreground: oklch(0.18 0.04 250);
+
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.18 0.04 250);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.18 0.04 250);
+
+  /* Primary = navy blue */
+  --primary: oklch(0.22 0.07 256);
+  --primary-foreground: oklch(0.985 0.005 80);
+
+  /* Secondary = soft cream */
+  --secondary: oklch(0.95 0.01 80);
+  --secondary-foreground: oklch(0.22 0.07 256);
+
+  --muted: oklch(0.95 0.01 80);
+  --muted-foreground: oklch(0.45 0.03 256);
+
+  /* Accent = gold */
+  --accent: oklch(0.82 0.13 84);
+  --accent-foreground: oklch(0.22 0.07 256);
+
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: oklch(0.88 0.02 250);
+  --input: oklch(0.9 0.015 250);
+  --ring: oklch(0.82 0.13 84);
+
+  --chart-1: oklch(0.22 0.07 256);
+  --chart-2: oklch(0.82 0.13 84);
+  --chart-3: oklch(0.45 0.12 84);
+  --chart-4: oklch(0.6 0.1 256);
+  --chart-5: oklch(0.35 0.05 250);
+
+  --sidebar: oklch(0.985 0.005 80);
+  --sidebar-foreground: oklch(0.22 0.07 256);
+  --sidebar-primary: oklch(0.22 0.07 256);
+  --sidebar-primary-foreground: oklch(0.985 0.005 80);
+  --sidebar-accent: oklch(0.95 0.01 80);
+  --sidebar-accent-foreground: oklch(0.22 0.07 256);
+  --sidebar-border: oklch(0.88 0.02 250);
+  --sidebar-ring: oklch(0.82 0.13 84);
+}
+
+.dark {
+  --background: oklch(0.13 0.04 256);
+  --foreground: oklch(0.96 0.01 80);
+  --card: oklch(0.18 0.05 256);
+  --card-foreground: oklch(0.96 0.01 80);
+  --popover: oklch(0.18 0.05 256);
+  --popover-foreground: oklch(0.96 0.01 80);
+  --primary: oklch(0.82 0.13 84);
+  --primary-foreground: oklch(0.18 0.05 256);
+  --secondary: oklch(0.25 0.05 256);
+  --secondary-foreground: oklch(0.96 0.01 80);
+  --muted: oklch(0.25 0.05 256);
+  --muted-foreground: oklch(0.7 0.02 80);
+  --accent: oklch(0.82 0.13 84);
+  --accent-foreground: oklch(0.18 0.05 256);
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.82 0.13 84);
+  --chart-1: oklch(0.82 0.13 84);
+  --chart-2: oklch(0.6 0.1 256);
+  --chart-3: oklch(0.45 0.12 84);
+  --chart-4: oklch(0.35 0.05 250);
+  --chart-5: oklch(0.25 0.05 256);
+  --sidebar: oklch(0.18 0.05 256);
+  --sidebar-foreground: oklch(0.96 0.01 80);
+  --sidebar-primary: oklch(0.82 0.13 84);
+  --sidebar-primary-foreground: oklch(0.18 0.05 256);
+  --sidebar-accent: oklch(0.25 0.05 256);
+  --sidebar-accent-foreground: oklch(0.96 0.01 80);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(0.82 0.13 84);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "ss01", "cv01", "cv02";
+  }
+  h1, h2, h3, h4 {
+    letter-spacing: -0.01em;
+  }
+}
+
+/* ---------- Custom utilities for the orchestra brand ---------- */
+@layer utilities {
+  .text-navy {
+    color: var(--color-navy-900);
+  }
+  .text-gold {
+    color: var(--color-gold-500);
+  }
+  .bg-navy {
+    background-color: var(--color-navy-900);
+  }
+  .bg-gold {
+    background-color: var(--color-gold-500);
+  }
+  .border-gold {
+    border-color: var(--color-gold-500);
+  }
+  .border-navy {
+    border-color: var(--color-navy-900);
+  }
+
+  /* Subtle paper-texture background for the body */
+  .bg-paper {
+    background-color: #fbf8f1;
+    background-image:
+      radial-gradient(circle at 25% 15%, rgba(201, 162, 39, 0.04) 0%, transparent 40%),
+      radial-gradient(circle at 75% 80%, rgba(10, 31, 68, 0.05) 0%, transparent 45%);
+  }
+
+  /* Hero gradient: deep navy with gold highlights */
+  .bg-hero-orchestra {
+    background:
+      radial-gradient(ellipse at 20% 30%, rgba(201, 162, 39, 0.18) 0%, transparent 55%),
+      radial-gradient(ellipse at 80% 70%, rgba(56, 90, 133, 0.35) 0%, transparent 60%),
+      linear-gradient(135deg, #06152c 0%, #0a1f44 45%, #122140 100%);
+  }
+
+  /* Gold ornamental divider */
+  .gold-divider {
+    height: 2px;
+    background: linear-gradient(90deg, transparent 0%, var(--color-gold-500) 50%, transparent 100%);
+  }
+
+  .text-shadow-navy {
+    text-shadow: 0 2px 12px rgba(6, 21, 44, 0.6);
+  }
+
+  /* Smooth section transitions */
+  .section-fade {
+    scroll-margin-top: 80px;
+  }
+
+  /* Subtle staff-lines pattern for backgrounds */
+  .bg-staff-lines {
+    background-image: repeating-linear-gradient(
+      to bottom,
+      transparent 0px,
+      transparent 7px,
+      rgba(201, 162, 39, 0.08) 7px,
+      rgba(201, 162, 39, 0.08) 8px
+    );
+  }
+}
+
+/* ---------- Animations ---------- */
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-up {
+  animation: fade-up 0.6s ease-out forwards;
+}
+
+@keyframes shimmer-gold {
+  0%, 100% {
+    box-shadow: 0 0 0 1px rgba(201, 162, 39, 0.4), 0 4px 16px rgba(201, 162, 39, 0.15);
+  }
+  50% {
+    box-shadow: 0 0 0 1px rgba(201, 162, 39, 0.7), 0 6px 22px rgba(201, 162, 39, 0.3);
+  }
+}
+
+.animate-shimmer-gold {
+  animation: shimmer-gold 3s ease-in-out infinite;
+}
+
+/* ---------- Custom scrollbar for sheet music list etc. ---------- */
+.scroll-thin::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.scroll-thin::-webkit-scrollbar-track {
+  background: transparent;
+}
+.scroll-thin::-webkit-scrollbar-thumb {
+  background: rgba(10, 31, 68, 0.2);
+  border-radius: 3px;
+}
+.scroll-thin::-webkit-scrollbar-thumb:hover {
+  background: rgba(10, 31, 68, 0.4);
+}
