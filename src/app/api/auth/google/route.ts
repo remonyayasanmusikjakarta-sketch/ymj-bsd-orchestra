@@ -73,7 +73,7 @@ export async function POST(req: Request) {
     const sectionMap: Record<string, string> = {
       Violin: "STRINGS", Viola: "STRINGS", Cello: "STRINGS", "Double Bass": "STRINGS",
       Flute: "WOODWINDS", Oboe: "WOODWINDS", Clarinet: "WOODWINDS", Bassoon: "WOODWINDS",
-      "French Horn": "BRASS", Trombone: "BRASS", Tuba: "BRASS",
+      Trumpet: "BRASS", "French Horn": "BRASS", Trombone: "BRASS", Tuba: "BRASS",
       Timpani: "PERCUSSION", Percussion: "PERCUSSION",
     }
     const instrumentSection = sectionMap[instrument] ?? "STRINGS"

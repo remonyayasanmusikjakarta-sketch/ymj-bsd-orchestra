@@ -31,6 +31,8 @@ import {
 import { AbsensiPanel } from "./AbsensiPanel"
 import { IuranPanel } from "./IuranPanel"
 import { HistoryPanel } from "./HistoryPanel"
+import { NameTag } from "./NameTag"
+import { CalendarView } from "./CalendarView"
 
 // ---------- Resource types ----------
 interface SheetMusicItem {
@@ -484,6 +486,7 @@ function WhatsAppGroups({ user }: { user: UserProfile }) {
 function AnnouncementBoard() {
   const { lang } = useAppStore()
   const [items, setItems] = useState<AnnouncementItem[]>([])
+  const [rehearsals, setRehearsals] = useState<{ id: string; title: string; date: string; location: string; notes?: string | null }[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -491,10 +494,18 @@ function AnnouncementBoard() {
     (async () => {
       setLoading(true)
       try {
-        const res = await fetch("/api/announcements", { cache: "no-store" })
-        if (!res.ok) throw new Error("Failed to load announcements")
-        const data = await res.json()
-        setItems(data.items || [])
+        const [aRes, rRes] = await Promise.all([
+          fetch("/api/announcements", { cache: "no-store" }),
+          fetch("/api/rehearsals", { cache: "no-store" }),
+        ])
+        if (!aRes.ok) throw new Error("Failed to load announcements")
+        const aData = await aRes.json()
+        setItems(aData.items || [])
+        // Rehearsals are optional — don't fail if this errors
+        if (rRes.ok) {
+          const rData = await rRes.json()
+          setRehearsals(rData.items || [])
+        }
       } catch (e) {
         setError(e instanceof Error ? e.message : "Failed to load")
       } finally {
@@ -522,6 +533,25 @@ function AnnouncementBoard() {
 
   const locale = lang === "zh" ? "zh-CN" : lang === "id" ? "id-ID" : "en-US"
 
+  // Combine announcements + rehearsals into calendar events
+  const calendarEvents = [
+    ...items.map((a) => ({
+      id: a.id,
+      title: a.title,
+      date: a.eventDate,
+      type: a.type,
+      description: a.content,
+    })),
+    ...rehearsals.map((r) => ({
+      id: r.id,
+      title: r.title,
+      date: r.date,
+      type: "REHEARSAL",
+      location: r.location,
+      description: r.notes || undefined,
+    })),
+  ]
+
   return (
     <section>
       <SectionHeading
@@ -529,6 +559,11 @@ function AnnouncementBoard() {
         title={t(lang, "dashboard.practiceConcertRoadmap")}
         description={t(lang, "dashboard.announcementsDesc")}
       />
+
+      {/* Monthly Calendar View */}
+      <div className="mt-6">
+        <CalendarView events={calendarEvents} />
+      </div>
 
       <div className="grid md:grid-cols-2 gap-4 mt-6">
         <Card className="border-gold-500/40 bg-gradient-to-br from-navy-900 to-navy-800 p-6 text-white">
@@ -667,38 +702,8 @@ function ProfilePanel({ user }: { user: UserProfile }) {
           </dl>
         </Card>
 
-        {/* Name tag */}
-        {user.nameTagUrl && (
-          <Card className="md:col-span-3 border-gold-500/30 bg-white p-6">
-            <div className="flex flex-col md:flex-row items-center gap-6">
-              <div className="flex-shrink-0">
-                { }
-                <img
-                  src={user.nameTagUrl}
-                  alt={`${user.name} - name tag`}
-                  className="w-48 h-auto rounded-lg shadow-md border border-gold-500/20"
-                />
-              </div>
-              <div className="flex-1 text-center md:text-left">
-                <div className="flex items-center gap-2 mb-2 justify-center md:justify-start">
-                  <Award className="h-5 w-5 text-gold-500" />
-                  <h3 className="font-semibold text-navy-900" style={{ fontFamily: "var(--font-display), serif" }}>
-                    {t(lang, "dashboard.memberNameTag")}
-                  </h3>
-                </div>
-                <p className="text-sm text-muted-foreground mb-4">
-                  {lang === "zh" ? "您的创始会员胸牌已自动生成。下载并用于排练和音乐会。" : lang === "id" ? "Name tag Founding Member Anda telah dibuat otomatis. Download dan gunakan saat latihan serta konser." : "Your Founding Member name tag has been auto-generated. Download and bring it to rehearsals and concerts."}
-                </p>
-                <Button asChild className="bg-gold-500 text-navy-950 hover:bg-gold-400 font-semibold">
-                  <a href={user.nameTagUrl} download>
-                    <Download className="mr-2 h-4 w-4" />
-                    {t(lang, "dashboard.downloadNameTag")}
-                  </a>
-                </Button>
-              </div>
-            </div>
-          </Card>
-        )}
+        {/* Name tag — client-side generated, always shown */}
+        <NameTag user={user} />
       </div>
     </section>
   )

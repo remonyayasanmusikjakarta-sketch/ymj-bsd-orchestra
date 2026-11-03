@@ -19,6 +19,7 @@ export const INSTRUMENTS: InstrumentDef[] = [
   { name: "Clarinet", section: "WOODWINDS", emoji: "🎵" },
   { name: "Bassoon", section: "WOODWINDS", emoji: "🎵" },
   // Brass
+  { name: "Trumpet", section: "BRASS", emoji: "🎺" },
   { name: "French Horn", section: "BRASS", emoji: "📯" },
   { name: "Trombone", section: "BRASS", emoji: "🎺" },
   { name: "Tuba", section: "BRASS", emoji: "🎺" },
@@ -43,7 +44,7 @@ export const SECTIONS: { key: SectionKey; label: string; instruments: string[]; 
   {
     key: "BRASS",
     label: "Brass",
-    instruments: ["French Horn", "Trombone", "Tuba"],
+    instruments: ["Trumpet", "French Horn", "Trombone", "Tuba"],
     blurb: "Proyeksi dan keagungan — memberi tubuh pada momen-momen monumental.",
   },
   {

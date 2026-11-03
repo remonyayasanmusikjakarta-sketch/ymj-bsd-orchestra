@@ -138,20 +138,17 @@ async function main() {
     if (!existing) await db.announcement.create({ data: a })
   }
 
-  // WhatsApp groups
-  const groups = [
-    { name: "General Orchestra (All Members)", section: "GENERAL", description: "Grup utama seluruh anggota YMJ BSD Community Orchestra.", link: "https://chat.whatsapp.com/ymj-bsd-general" },
-    { name: "Strings Section (Violin/Viola/Cello/Bass)", section: "STRINGS", description: "Koordinasi latihan & partitur untuk seluruh keluarga Strings.", link: "https://chat.whatsapp.com/ymj-bsd-strings" },
-    { name: "Woodwinds Section (Flute/Oboe/Clarinet/Bassoon)", section: "WOODWINDS", description: "Grup koordinasi Woodwinds.", link: "https://chat.whatsapp.com/ymj-bsd-woodwinds" },
-    { name: "Brass Section (Horn/Trombone/Tuba)", section: "BRASS", description: "Grup koordinasi Brass.", link: "https://chat.whatsapp.com/ymj-bsd-brass" },
-    { name: "Percussion Section", section: "PERCUSSION", description: "Grup koordinasi Timpani & Percussion.", link: "https://chat.whatsapp.com/ymj-bsd-percussion" },
-    { name: "Junior Orchestra (Ages 8–16 & Parents)", section: "JUNIOR", description: "Grup Junior Orchestra — koordinasi bersama orang tua/wali.", link: "https://chat.whatsapp.com/ymj-bsd-junior" },
-    { name: "Community Orchestra (Teens & Adults)", section: "COMMUNITY", description: "Grup Community Orchestra untuk remaja & dewasa.", link: "https://chat.whatsapp.com/ymj-bsd-community" },
-  ]
-  for (const g of groups) {
-    const existing = await db.whatsAppGroup.findFirst({ where: { name: g.name } })
-    if (!existing) await db.whatsAppGroup.create({ data: g })
-  }
+  // WhatsApp group — single official group
+  // Delete all existing groups, then create the one official group
+  await db.whatsAppGroup.deleteMany({})
+  await db.whatsAppGroup.create({
+    data: {
+      name: "YMJ BSD Community Orchestra (Official Group)",
+      section: "GENERAL",
+      description: "Grup WhatsApp resmi seluruh anggota YMJ BSD Community Orchestra.",
+      link: "https://chat.whatsapp.com/C7l6UBOvnbo4lSuGMWvHZs",
+    },
+  })
 
   // Singleton setting
   await db.setting.upsert({

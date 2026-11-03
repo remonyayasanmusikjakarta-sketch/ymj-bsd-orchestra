@@ -4,7 +4,7 @@ import { useEffect, useState } from "react"
 import {
   Music2, Music, Calendar, MapPin, Clock, Target, Phone, Mail, ChevronRight,
   Wind, AudioLines, Drum, Users, GraduationCap, ArrowRight, Sparkles,
-  Play, Video, ShieldCheck,
+  Play, Video, ShieldCheck, Quote, Award, UserCircle,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
@@ -12,6 +12,8 @@ import { Badge } from "@/components/ui/badge"
 import { SECTIONS, CATEGORIES } from "@/lib/instruments"
 import { useAppStore } from "@/lib/store"
 import { t } from "@/lib/i18n"
+import { cn } from "@/lib/utils"
+import { FOUNDER, FOUNDER_MESSAGE, FOUNDER_QUOTE, MUSIC_DIRECTORS } from "@/lib/leadership"
 import { Gallery } from "./Gallery"
 
 function SectionIcon({ section }: { section: string }) {
@@ -158,12 +160,100 @@ function About() {
   return (
     <section id="about" className="section-fade bg-paper py-20 md:py-28">
       <div className="container mx-auto px-4 md:px-6 max-w-6xl">
+        {/* YMJ Logo */}
+        <div className="flex justify-center mb-8">
+          <div className="grid place-items-center">
+            { }
+            <img
+              src="/uploads/leadership/ymj-logo.jpg"
+              alt="Yayasan Musik Jakarta Logo"
+              className="h-24 w-24 md:h-32 md:w-32 rounded-full border-4 border-gold-500/40 shadow-md object-cover"
+              onError={(e) => {
+                (e.target as HTMLImageElement).style.display = "none"
+              }}
+            />
+          </div>
+        </div>
+
         <SectionHeader
           eyebrow={t(lang, "about.eyebrow")}
           title={t(lang, "about.title")}
           subtitle={t(lang, "about.subtitle")}
         />
 
+        {/* Founder's message */}
+        <div className="mt-12 max-w-5xl mx-auto">
+          <Card className="border-gold-500/30 bg-white shadow-lg overflow-hidden">
+            <div className="grid md:grid-cols-3 gap-0">
+              {/* Photo */}
+              <div className="bg-hero-orchestra p-8 grid place-items-center">
+                <div className="text-center">
+                  { }
+                  <img
+                    src={FOUNDER.photoUrl}
+                    alt={FOUNDER.name}
+                    className="h-32 w-32 rounded-full border-4 border-gold-500/60 object-cover mx-auto mb-3"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).style.display = "none"
+                      const fallback = (e.target as HTMLImageElement).nextElementSibling as HTMLElement
+                      if (fallback) fallback.style.display = "grid"
+                    }}
+                  />
+                  <div className="hidden h-32 w-32 rounded-full border-4 border-gold-500/60 bg-navy-900 mx-auto mb-3 place-items-center">
+                    <UserCircle className="h-16 w-16 text-gold-400" />
+                  </div>
+                  <p className="text-white font-semibold text-lg" style={{ fontFamily: "var(--font-display), serif" }}>
+                    {FOUNDER.name}
+                  </p>
+                  <p className="text-gold-400 text-xs uppercase tracking-wider mt-1">
+                    {lang === "zh" ? FOUNDER.roleZh : lang === "id" ? FOUNDER.role : FOUNDER.roleEn}
+                  </p>
+                </div>
+              </div>
+
+              {/* Message */}
+              <div className="md:col-span-2 p-8">
+                <div className="flex items-center gap-2 mb-4">
+                  <Quote className="h-6 w-6 text-gold-500" />
+                  <h3 className="text-lg font-semibold text-navy-900" style={{ fontFamily: "var(--font-display), serif" }}>
+                    {lang === "id" ? "Sambutan dari Pendiri" : lang === "zh" ? "创始人寄语" : "Message from the Founder"}
+                  </h3>
+                </div>
+                <p className="text-sm text-muted-foreground leading-relaxed mb-4 italic">
+                  &ldquo;{lang === "id" ? FOUNDER_MESSAGE.id : FOUNDER_MESSAGE.en}&rdquo;
+                </p>
+                <div className="border-l-4 border-gold-500 pl-4 py-2 bg-gold-50 rounded-r-md">
+                  <p className="text-base font-semibold text-navy-900" style={{ fontFamily: "var(--font-display), serif" }}>
+                    &ldquo;{lang === "id" ? FOUNDER_QUOTE.id : FOUNDER_QUOTE.en}&rdquo;
+                  </p>
+                </div>
+                <p className="text-xs text-muted-foreground mt-3 text-right">
+                  — {FOUNDER.name}
+                </p>
+              </div>
+            </div>
+          </Card>
+        </div>
+
+        {/* Music Director structure */}
+        <div className="mt-12">
+          <div className="text-center mb-8">
+            <p className="text-xs uppercase tracking-[0.22em] font-semibold text-gold-600 mb-2">
+              {lang === "id" ? "Struktur Kepemimpinan" : lang === "zh" ? "领导架构" : "Leadership Structure"}
+            </p>
+            <h3 className="text-2xl md:text-3xl font-bold text-navy-900" style={{ fontFamily: "var(--font-display), serif" }}>
+              {lang === "id" ? "Tim Music Director" : lang === "zh" ? "音乐总监团队" : "Music Director Team"}
+            </h3>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-6">
+            {MUSIC_DIRECTORS.map((leader, idx) => (
+              <LeaderCard key={leader.name} leader={leader} lang={lang} highlight={idx === 0} />
+            ))}
+          </div>
+        </div>
+
+        {/* Value cards */}
         <div className="grid md:grid-cols-3 gap-6 mt-12">
           <Card className="border-gold-500/20 bg-white shadow-sm p-6">
             <div className="grid h-12 w-12 place-items-center rounded-lg bg-navy-900 text-gold-400 mb-4">
@@ -209,6 +299,53 @@ function About() {
         </div>
       </div>
     </section>
+  )
+}
+
+// Leader card with photo + name + role + bio
+function LeaderCard({ leader, lang, highlight }: { leader: typeof MUSIC_DIRECTORS[0]; lang: string; highlight?: boolean }) {
+  return (
+    <Card className={cn(
+      "bg-white p-6 text-center transition-shadow hover:shadow-md",
+      highlight ? "border-2 border-gold-500/50 shadow-md" : "border-gold-500/20 shadow-sm"
+    )}>
+      <div className="relative mx-auto mb-4 w-fit">
+        { }
+        <img
+          src={leader.photoUrl}
+          alt={leader.name}
+          className={cn(
+            "rounded-full object-cover mx-auto",
+            highlight ? "h-32 w-32 border-4 border-gold-500" : "h-28 w-28 border-4 border-gold-500/40"
+          )}
+          onError={(e) => {
+            (e.target as HTMLImageElement).style.display = "none"
+            const fallback = (e.target as HTMLImageElement).nextElementSibling as HTMLElement
+            if (fallback) fallback.style.display = "grid"
+          }}
+        />
+        <div className={cn(
+          "hidden rounded-full bg-navy-900 mx-auto place-items-center text-gold-400",
+          highlight ? "h-32 w-32 border-4 border-gold-500" : "h-28 w-28 border-4 border-gold-500/40"
+        )}>
+          <UserCircle className={highlight ? "h-16 w-16" : "h-14 w-14"} />
+        </div>
+        {highlight && (
+          <span className="absolute -top-2 -right-2 grid h-8 w-8 place-items-center rounded-full bg-gold-500 text-navy-950">
+            <Award className="h-4 w-4" />
+          </span>
+        )}
+      </div>
+      <h4 className="font-semibold text-navy-900 text-lg" style={{ fontFamily: "var(--font-display), serif" }}>
+        {leader.name}
+      </h4>
+      <p className="text-xs uppercase tracking-wider text-gold-600 font-semibold mt-1 mb-3">
+        {lang === "zh" ? leader.roleZh : lang === "id" ? leader.role : leader.roleEn}
+      </p>
+      <p className="text-sm text-muted-foreground leading-relaxed">
+        {lang === "id" ? leader.bio : leader.bioEn}
+      </p>
+    </Card>
   )
 }
 
