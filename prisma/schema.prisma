@@ -12,23 +12,29 @@ datasource db {
 model User {
   id                String   @id @default(cuid())
   email             String   @unique
-  password          String?  // null when signed up via Google
+  password          String?
   name              String
   whatsapp          String
-  ageCategory       String   // "JUNIOR" | "COMMUNITY"
+  ageCategory       String
   age               Int
-  instrument        String   // e.g. "Violin", "Flute", "Timpani"
-  instrumentSection String   // "STRINGS" | "WOODWINDS" | "BRASS" | "PERCUSSION"
+  instrument        String
+  instrumentSection String
   experienceYears   Float
   address           String
-  photoUrl          String?  // path to uploaded profile photo
-  nameTagUrl        String?  // path to generated name tag image
-  role              String   @default("MEMBER") // "MEMBER" | "ADMIN"
-  status            String   @default("VERIFIED") // "PENDING" | "VERIFIED" | "REJECTED"
-  provider          String   @default("EMAIL") // "EMAIL" | "GOOGLE"
+  photoUrl          String?
+  nameTagUrl        String?
+  role              String   @default("MEMBER")
+  status            String   @default("VERIFIED")
+  provider          String   @default("EMAIL")
   emailVerified     Boolean  @default(true)
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
+
+  attendances       Attendance[]
+  duesPayments      DuesPayment[]
+  history           MembershipHistory[]
+  createdRehearsals Rehearsal[]
+  createdDues       Dues[]
 
   @@index([instrumentSection])
   @@index([ageCategory])
@@ -39,11 +45,11 @@ model SheetMusic {
   id          String   @id @default(cuid())
   title       String
   composer    String
-  instrument  String   // matches User.instrument or "ALL"
-  section     String   // "STRINGS" | "WOODWINDS" | "BRASS" | "PERCUSSION" | "ALL"
-  category    String   // "JUNIOR" | "COMMUNITY" | "ALL"
+  instrument  String
+  section     String
+  category    String
   fileUrl     String
-  fileType    String   @default("PDF") // "PDF" | "IMG" | "LINK"
+  fileType    String   @default("PDF")
   difficulty  String   @default("INTERMEDIATE")
   description String?
   createdAt   DateTime @default(now())
@@ -57,32 +63,113 @@ model Announcement {
   title     String
   content   String
   eventDate DateTime
-  type      String   // "PRACTICE" | "CONCERT" | "GENERAL" | "AUDITION"
+  type      String
   createdAt DateTime @default(now())
 }
 
 model WhatsAppGroup {
   id          String   @id @default(cuid())
   name        String
-  section     String   // "STRINGS" | "WOODWINDS" | "BRASS" | "PERCUSSION" | "GENERAL" | "JUNIOR" | "COMMUNITY"
+  section     String
   description String?
   link        String
   createdAt   DateTime @default(now())
 }
 
 model Video {
-  id          String   @id @default(cuid())
-  title       String
-  description String?
-  videoType   String   // "FILE" | "YOUTUBE" | "VIMEO"
-  videoUrl    String   // file path or external URL
+  id           String   @id @default(cuid())
+  title        String
+  description  String?
+  videoType    String
+  videoUrl     String
   thumbnailUrl String?
-  eventDate   DateTime @default(now())
-  createdAt   DateTime @default(now())
+  eventDate    DateTime @default(now())
+  createdAt    DateTime @default(now())
 }
 
 model Setting {
   id                 String  @id @default("singleton")
   googleSheetWebhook String?
   updatedAt          DateTime @updatedAt
+}
+
+// ===== NEW MODELS: Absensi, Iuran, Riwayat =====
+
+model Rehearsal {
+  id              String   @id @default(cuid())
+  title           String
+  date            DateTime
+  location        String
+  notes           String?
+  attendanceOpen  Boolean  @default(false)
+  createdById     String
+  createdBy       User     @relation(fields: [createdById], references: [id])
+  createdAt       DateTime @default(now())
+
+  attendances     Attendance[]
+
+  @@index([date])
+}
+
+model Attendance {
+  id           String   @id @default(cuid())
+  rehearsalId  String
+  rehearsal    Rehearsal @relation(fields: [rehearsalId], references: [id], onDelete: Cascade)
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status       String   // "PRESENT" | "ABSENT" | "LATE" | "EXCUSED"
+  reason       String?
+  markedAt     DateTime @default(now())
+
+  @@unique([rehearsalId, userId])
+  @@index([userId])
+}
+
+model Dues {
+  id          String   @id @default(cuid())
+  title       String
+  description String
+  minAmount   Float
+  active      Boolean  @default(true)
+  createdById String
+  createdBy   User     @relation(fields: [createdById], references: [id])
+  createdAt   DateTime @default(now())
+
+  payments    DuesPayment[]
+
+  @@index([active])
+}
+
+model DuesPayment {
+  id           String   @id @default(cuid())
+  duesId       String
+  dues         Dues     @relation(fields: [duesId], references: [id], onDelete: Cascade)
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  amountPaid   Float
+  proofUrl     String
+  proofType    String   @default("UPLOAD") // "UPLOAD" | "URL"
+  status       String   @default("PENDING") // "PENDING" | "VERIFIED" | "REJECTED"
+  adminNote    String?
+  paidAt       DateTime @default(now())
+  verifiedAt   DateTime?
+  verifiedById String?
+
+  @@index([duesId])
+  @@index([userId])
+  @@index([status])
+}
+
+model MembershipHistory {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  eventType   String   // "JOINED" | "STATUS_CHANGE" | "ROLE_CHANGE" | "ATTENDANCE" | "PAYMENT"
+  title       String
+  description String
+  metadata    String?
+  createdAt   DateTime @default(now())
+
+  @@index([userId])
+  @@index([eventType])
 }

@@ -7,6 +7,7 @@ import { hashPassword, setSessionCookie } from "@/lib/auth"
 import { getSectionForInstrument } from "@/lib/instruments"
 import { sendRegistrationToWebhook } from "@/lib/webhook"
 import { generateNameTag } from "@/lib/name-tag"
+import { logHistory } from "@/lib/history"
 
 interface RegisterBody {
   name?: string
@@ -48,7 +49,8 @@ export async function POST(req: Request) {
     if (!instrument) missing.push("instrument")
     if (experienceYears === undefined || experienceYears === null) missing.push("experienceYears")
     if (!address) missing.push("address")
-    if (!photoUrl) missing.push("photoUrl")
+    // NOTE: photoUrl is now OPTIONAL — members can register without uploading a photo.
+    // If no photo, we use an initials-based avatar + name tag fallback.
     if (missing.length > 0) {
       return NextResponse.json(
         { error: `Missing required fields: ${missing.join(", ")}` },
@@ -90,7 +92,7 @@ export async function POST(req: Request) {
         instrumentSection,
         experienceYears: Number(experienceYears),
         address: address!,
-        photoUrl: photoUrl!,
+        photoUrl: photoUrl || null,  // optional — null if not uploaded
         provider: "EMAIL",
         emailVerified: true,
         status: "VERIFIED",
@@ -98,6 +100,7 @@ export async function POST(req: Request) {
     })
 
     // Generate name tag (best-effort — don't fail registration if it errors)
+    // name-tag.ts handles both cases: with photo (uses photo) or without (uses initials).
     let nameTagUrl: string | null = null
     try {
       nameTagUrl = await generateNameTag({
@@ -106,7 +109,7 @@ export async function POST(req: Request) {
         instrument: user.instrument,
         section: user.instrumentSection,
         ageCategory: user.ageCategory,
-        photoUrl: user.photoUrl,
+        photoUrl: user.photoUrl || "",
       })
       if (nameTagUrl) {
         await db.user.update({ where: { id: user.id }, data: { nameTagUrl } })
@@ -114,6 +117,15 @@ export async function POST(req: Request) {
     } catch (e) {
       console.error("[register] name tag generation failed:", e)
     }
+
+    // Log JOINED history event
+    await logHistory({
+      userId: user.id,
+      eventType: "JOINED",
+      title: "Member joined the orchestra",
+      description: `${user.name} registered as ${user.instrument} (${user.instrumentSection}) — ${user.ageCategory === "JUNIOR" ? "Junior Orchestra" : "Community Orchestra"}.`,
+      metadata: { provider: user.provider, instrument: user.instrument, section: user.instrumentSection },
+    })
 
     // Fire webhook to Google Sheet
     const webhookResult = await sendRegistrationToWebhook({

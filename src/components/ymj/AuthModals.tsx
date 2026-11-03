@@ -259,16 +259,18 @@ function RegisterModal({
 
   const onSubmit = handleSubmit(async (values) => {
     setServerError(null)
-    if (!uploadedPhotoUrl) {
-      setServerError(t(lang, "auth.photoRequired"))
-      return
-    }
+    // Photo is now OPTIONAL — registration proceeds even without a photo.
+    // If no photo is uploaded, an initials-based avatar + name tag will be used.
     setLoading(true)
     try {
+      const payload: Record<string, unknown> = { ...values }
+      if (uploadedPhotoUrl) {
+        payload.photoUrl = uploadedPhotoUrl
+      }
       const res = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...values, photoUrl: uploadedPhotoUrl }),
+        body: JSON.stringify(payload),
       })
       const data = await res.json()
       if (!res.ok) {
@@ -332,16 +334,19 @@ function RegisterModal({
                 </Field>
               </div>
 
-              {/* Photo upload */}
+              {/* Photo upload — OPTIONAL */}
               <div className="space-y-1.5">
                 <Label className="text-navy-900 text-sm font-medium">
                   {t(lang, "auth.photoUpload")}
+                  <span className="ml-2 text-xs font-normal text-muted-foreground">
+                    ({lang === "zh" ? "可选" : lang === "id" ? "opsional" : "optional"})
+                  </span>
                 </Label>
                 <div className="flex items-center gap-4">
                   {/* Preview */}
                   <div className="flex-shrink-0 grid h-20 w-20 place-items-center rounded-lg border-2 border-dashed border-gold-500/40 bg-gold-50 overflow-hidden">
                     {photoPreview ? (
-                       
+                      
                       <img src={photoPreview} alt="Preview" className="w-full h-full object-cover" />
                     ) : (
                       <ImageIcon className="h-8 w-8 text-gold-500/50" />
@@ -376,7 +381,13 @@ function RegisterModal({
                         t(lang, "auth.noFileSelected")
                       )}
                     </p>
-                    <p className="text-xs text-muted-foreground">{t(lang, "auth.photoHint")}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {lang === "zh"
+                        ? "不传照片将使用姓名首字母作为头像。"
+                        : lang === "id"
+                          ? "Tanpa foto, avatar inisial nama akan dipakai otomatis."
+                          : "Without a photo, an initials avatar will be used automatically."}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -465,7 +476,7 @@ function RegisterModal({
                 {t(lang, "auth.dataPrivacyNote")}
               </div>
 
-              <Button type="submit" disabled={loading || uploadingPhoto} className="w-full bg-gold-500 text-navy-950 hover:bg-gold-400 font-semibold h-12">
+              <Button type="submit" disabled={loading} className="w-full bg-gold-500 text-navy-950 hover:bg-gold-400 font-semibold h-12">
                 {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : (
                   <>
                     {t(lang, "auth.completeRegistration")}

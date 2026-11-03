@@ -53,7 +53,7 @@ export async function POST(req: Request) {
       })
     }
 
-    // New Google user — require the rest of the registration fields
+    // New Google user — require the rest of the registration fields (photo is OPTIONAL)
     const missing: string[] = []
     if (!body.whatsapp) missing.push("whatsapp")
     if (!body.ageCategory) missing.push("ageCategory")
@@ -61,7 +61,7 @@ export async function POST(req: Request) {
     if (!body.instrument) missing.push("instrument")
     if (body.experienceYears === undefined) missing.push("experienceYears")
     if (!body.address) missing.push("address")
-    if (!body.photoUrl) missing.push("photoUrl")
+    // photoUrl is optional — fallback to initials avatar if not provided
     if (missing.length > 0) {
       return NextResponse.json(
         { error: `Missing fields: ${missing.join(", ")}`, needProfile: true },
@@ -90,7 +90,7 @@ export async function POST(req: Request) {
         instrumentSection,
         experienceYears: Number(body.experienceYears),
         address: body.address!,
-        photoUrl: body.photoUrl!,
+        photoUrl: body.photoUrl || null,  // optional — fallback to initials avatar
         provider: "GOOGLE",
         emailVerified: true,
         status: "VERIFIED",
@@ -106,7 +106,7 @@ export async function POST(req: Request) {
         instrument: user.instrument,
         section: user.instrumentSection,
         ageCategory: user.ageCategory,
-        photoUrl: user.photoUrl,
+        photoUrl: user.photoUrl || "",
       })
       if (nameTagUrl) {
         await db.user.update({ where: { id: user.id }, data: { nameTagUrl } })

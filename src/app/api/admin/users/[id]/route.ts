@@ -5,6 +5,7 @@
 import { NextResponse } from "next/server"
 import { db } from "@/lib/db"
 import { getSession } from "@/lib/auth"
+import { logHistory } from "@/lib/history"
 
 export async function PATCH(
   req: Request,
@@ -22,7 +23,6 @@ export async function PATCH(
       return NextResponse.json({ error: "Invalid role. Must be ADMIN or MEMBER" }, { status: 400 })
     }
 
-    // Prevent self-demotion
     if (id === session.userId && newRole !== "ADMIN") {
       return NextResponse.json(
         { error: "You cannot demote yourself. Ask another admin to demote you." },
@@ -33,6 +33,11 @@ export async function PATCH(
     const target = await db.user.findUnique({ where: { id } })
     if (!target) return NextResponse.json({ error: "User not found" }, { status: 404 })
 
+    const oldRole = target.role
+    if (oldRole === newRole) {
+      return NextResponse.json({ error: "User already has this role" }, { status: 400 })
+    }
+
     const updated = await db.user.update({
       where: { id },
       data: { role: newRole },
@@ -42,7 +47,6 @@ export async function PATCH(
     if (newRole === "MEMBER") {
       const adminCount = await db.user.count({ where: { role: "ADMIN" } })
       if (adminCount === 0) {
-        // revert
         await db.user.update({ where: { id }, data: { role: "ADMIN" } })
         return NextResponse.json(
           { error: "Cannot demote — at least one admin must remain." },
@@ -50,6 +54,15 @@ export async function PATCH(
         )
       }
     }
+
+    // Log role change history
+    await logHistory({
+      userId: id,
+      eventType: "ROLE_CHANGE",
+      title: newRole === "ADMIN" ? "Promoted to Admin" : "Demoted to Member",
+      description: `Role changed from ${oldRole} to ${newRole} by ${session.email}.`,
+      metadata: { oldRole, newRole, changedBy: session.userId },
+    })
 
     return NextResponse.json({
       ok: true,

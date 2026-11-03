@@ -6,7 +6,8 @@ import {
   Settings, Users, Download, ExternalLink, Search, Loader2,
   BadgeCheck, Clock, MapPin, Target, Phone, Mail, ShieldCheck,
   AlertCircle, Sparkles, FileText, CheckCircle2, Upload, Video,
-  Trash2, ChevronDown, ChevronUp, ImageIcon, Award, Crown,
+  Trash2, ChevronDown, ChevronUp, ImageIcon, Award, Crown, X,
+  CalendarCheck, Wallet, History as HistoryIcon,
 } from "lucide-react"
 
 import { Card } from "@/components/ui/card"
@@ -27,6 +28,9 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
+import { AbsensiPanel } from "./AbsensiPanel"
+import { IuranPanel } from "./IuranPanel"
+import { HistoryPanel } from "./HistoryPanel"
 
 // ---------- Resource types ----------
 interface SheetMusicItem {
@@ -134,10 +138,13 @@ export function MemberDashboard() {
       {/* Tabs + content */}
       <div className="container mx-auto px-4 md:px-6 py-8 md:py-10 max-w-6xl">
         <Tabs value={tab} onValueChange={setTab}>
-          <TabsList className="grid w-full grid-cols-2 md:grid-cols-5 gap-1 bg-white border border-border h-auto p-1">
+          <TabsList className="grid w-full grid-cols-2 md:grid-cols-8 gap-1 bg-white border border-border h-auto p-1">
             <TabTrigger value="library" icon={<FileMusic className="h-4 w-4" />} label={t(lang, "dashboard.sheetMusic")} />
             <TabTrigger value="whatsapp" icon={<MessageCircle className="h-4 w-4" />} label={t(lang, "dashboard.whatsapp")} />
             <TabTrigger value="announcements" icon={<CalendarDays className="h-4 w-4" />} label={t(lang, "dashboard.schedule")} />
+            <TabTrigger value="attendance" icon={<CalendarCheck className="h-4 w-4" />} label={t(lang, "dashboard.attendance")} />
+            <TabTrigger value="dues" icon={<Wallet className="h-4 w-4" />} label={t(lang, "dashboard.dues")} />
+            <TabTrigger value="history" icon={<HistoryIcon className="h-4 w-4" />} label={t(lang, "dashboard.history")} />
             <TabTrigger value="profile" icon={<UserIcon className="h-4 w-4" />} label={t(lang, "dashboard.profile")} />
             {user.role === "ADMIN" && (
               <TabTrigger value="admin" icon={<Settings className="h-4 w-4" />} label={t(lang, "dashboard.adminTab")} />
@@ -152,6 +159,15 @@ export function MemberDashboard() {
           </TabsContent>
           <TabsContent value="announcements" className="mt-6">
             <AnnouncementBoard />
+          </TabsContent>
+          <TabsContent value="attendance" className="mt-6">
+            <AbsensiPanel user={user} />
+          </TabsContent>
+          <TabsContent value="dues" className="mt-6">
+            <IuranPanel user={user} />
+          </TabsContent>
+          <TabsContent value="history" className="mt-6">
+            <HistoryPanel />
           </TabsContent>
           <TabsContent value="profile" className="mt-6">
             <ProfilePanel user={user} />
@@ -705,7 +721,7 @@ function ProfileRow({ icon, label, value, className }: { icon: React.ReactNode; 
 // ---------------------------------------------------------------
 function AdminPanel() {
   const { lang } = useAppStore()
-  const [section, setSection] = useState<"webhook" | "sheets" | "videos" | "regs">("regs")
+  const [section, setSection] = useState<"regs" | "rehearsals" | "dues" | "payments" | "sheets" | "videos" | "webhook">("regs")
 
   return (
     <section>
@@ -718,6 +734,9 @@ function AdminPanel() {
       {/* Section switcher */}
       <div className="flex flex-wrap gap-2 mt-6">
         <AdminSectionBtn active={section === "regs"} onClick={() => setSection("regs")} icon={<Users className="h-4 w-4" />} label={t(lang, "dashboard.allRegistrations")} />
+        <AdminSectionBtn active={section === "rehearsals"} onClick={() => setSection("rehearsals")} icon={<CalendarCheck className="h-4 w-4" />} label={t(lang, "dashboard.rehearsalManager")} />
+        <AdminSectionBtn active={section === "dues"} onClick={() => setSection("dues")} icon={<Wallet className="h-4 w-4" />} label={t(lang, "dashboard.duesManager")} />
+        <AdminSectionBtn active={section === "payments"} onClick={() => setSection("payments")} icon={<Wallet className="h-4 w-4" />} label={lang === "id" ? "Verifikasi Pembayaran" : "Payment Verification"} />
         <AdminSectionBtn active={section === "sheets"} onClick={() => setSection("sheets")} icon={<FileMusic className="h-4 w-4" />} label={t(lang, "dashboard.sheetMusicManager")} />
         <AdminSectionBtn active={section === "videos"} onClick={() => setSection("videos")} icon={<Video className="h-4 w-4" />} label={t(lang, "dashboard.videoManager")} />
         <AdminSectionBtn active={section === "webhook"} onClick={() => setSection("webhook")} icon={<Settings className="h-4 w-4" />} label={t(lang, "dashboard.googleSheetWebhook")} />
@@ -725,6 +744,9 @@ function AdminPanel() {
 
       <div className="mt-6">
         {section === "regs" && <RegistrationsManager />}
+        {section === "rehearsals" && <RehearsalManager />}
+        {section === "dues" && <DuesManager />}
+        {section === "payments" && <DuesPaymentsManager />}
         {section === "sheets" && <SheetMusicManager />}
         {section === "videos" && <VideoManager />}
         {section === "webhook" && <WebhookManager />}
@@ -747,6 +769,522 @@ function AdminSectionBtn({ active, onClick, icon, label }: { active: boolean; on
       {icon}
       {label}
     </button>
+  )
+}
+
+// ---------- Rehearsal manager (admin) ----------
+interface RehearsalItem {
+  id: string; title: string; date: string; location: string;
+  notes?: string | null; attendanceOpen: boolean; attendanceCount: number;
+}
+
+function RehearsalManager() {
+  const { toast } = useToast()
+  const { lang } = useAppStore()
+  const [items, setItems] = useState<RehearsalItem[]>([])
+  const [loading, setLoading] = useState(true)
+  const [showForm, setShowForm] = useState(false)
+  const [title, setTitle] = useState("")
+  const [date, setDate] = useState("")
+  const [location, setLocation] = useState("")
+  const [notes, setNotes] = useState("")
+  const [submitting, setSubmitting] = useState(false)
+
+  const load = useCallback(async () => {
+    setLoading(true)
+    try {
+      const res = await fetch("/api/rehearsals", { cache: "no-store" })
+      const data = await res.json()
+      setItems(data.items || [])
+    } catch {
+      // ignore
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  useEffect(() => { load() }, [load])
+
+  const create = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!title || !date || !location) {
+      toast({ title: lang === "id" ? "Lengkapi semua field" : "Fill all fields", variant: "destructive" })
+      return
+    }
+    setSubmitting(true)
+    try {
+      const res = await fetch("/api/rehearsals", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title, date, location, notes }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data?.error || "Failed")
+      toast({ title: lang === "id" ? "Sesi latihan dibuat" : "Rehearsal created" })
+      setTitle(""); setDate(""); setLocation(""); setNotes("")
+      setShowForm(false)
+      load()
+    } catch (e) {
+      toast({ title: "Error", description: e instanceof Error ? e.message : "Unknown", variant: "destructive" })
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  const toggleAttendance = async (id: string, current: boolean) => {
+    try {
+      const res = await fetch(`/api/rehearsals/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ attendanceOpen: !current }),
+      })
+      if (!res.ok) throw new Error("Failed")
+      toast({ title: !current ? (lang === "id" ? "Absensi dibuka" : "Attendance opened") : (lang === "id" ? "Absensi ditutup" : "Attendance closed") })
+      load()
+    } catch (e) {
+      toast({ title: "Error", description: e instanceof Error ? e.message : "Unknown", variant: "destructive" })
+    }
+  }
+
+  const del = async (id: string) => {
+    if (!confirm(lang === "id" ? "Hapus sesi ini? Semua absensi terkait juga akan dihapus." : "Delete this rehearsal? All related attendance will be deleted.")) return
+    try {
+      const res = await fetch(`/api/rehearsals/${id}`, { method: "DELETE" })
+      if (!res.ok) throw new Error("Failed")
+      toast({ title: lang === "id" ? "Dihapus" : "Deleted" })
+      load()
+    } catch (e) {
+      toast({ title: "Error", description: e instanceof Error ? e.message : "Unknown", variant: "destructive" })
+    }
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h3 className="font-semibold text-navy-900" style={{ fontFamily: "var(--font-display), serif" }}>
+          {t(lang, "dashboard.rehearsalManager")}
+        </h3>
+        <Button onClick={() => setShowForm((s) => !s)} className="bg-gold-500 text-navy-950 hover:bg-gold-400">
+          <CalendarCheck className="h-4 w-4 mr-2" />
+          {t(lang, "dashboard.newRehearsal")}
+        </Button>
+      </div>
+
+      {showForm && (
+        <Card className="border-gold-500/30 bg-white p-5">
+          <form onSubmit={create} className="space-y-4">
+            <div>
+              <Label className="text-sm font-medium">{t(lang, "dashboard.rehearsalTitle")}</Label>
+              <Input value={title} onChange={(e) => setTitle(e.target.value)} required className="mt-1" placeholder="Latihan Rutin Sabtu" />
+            </div>
+            <div className="grid sm:grid-cols-2 gap-4">
+              <div>
+                <Label className="text-sm font-medium">{t(lang, "dashboard.rehearsalDate")}</Label>
+                <Input type="datetime-local" value={date} onChange={(e) => setDate(e.target.value)} required className="mt-1" />
+              </div>
+              <div>
+                <Label className="text-sm font-medium">{t(lang, "dashboard.rehearsalLocation")}</Label>
+                <Input value={location} onChange={(e) => setLocation(e.target.value)} required className="mt-1" placeholder="YMJ Campus BSD" />
+              </div>
+            </div>
+            <div>
+              <Label className="text-sm font-medium">{t(lang, "dashboard.rehearsalNotes")}</Label>
+              <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} className="mt-1" />
+            </div>
+            <div className="flex gap-2">
+              <Button type="submit" disabled={submitting} className="bg-gold-500 text-navy-950 hover:bg-gold-400">
+                {submitting ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <CheckCircle2 className="h-4 w-4 mr-1" />}
+                {t(lang, "dashboard.createRehearsal")}
+              </Button>
+              <Button type="button" variant="outline" onClick={() => setShowForm(false)}>{t(lang, "common.cancel")}</Button>
+            </div>
+          </form>
+        </Card>
+      )}
+
+      {loading ? (
+        <div className="p-10 text-center text-muted-foreground">
+          <Loader2 className="h-6 w-6 animate-spin mx-auto mb-2" />
+          {t(lang, "common.loading")}
+        </div>
+      ) : items.length === 0 ? (
+        <Card className="border-dashed border-2 p-8 text-center text-muted-foreground">
+          <CalendarCheck className="h-8 w-8 mx-auto mb-2 opacity-50" />
+          {lang === "id" ? "Belum ada sesi latihan." : "No rehearsal sessions yet."}
+        </Card>
+      ) : (
+        <div className="space-y-2">
+          {items.map((r) => (
+            <Card key={r.id} className="border-border bg-white p-4">
+              <div className="flex flex-col md:flex-row md:items-center gap-3">
+                <div className="flex-1">
+                  <div className="flex flex-wrap items-center gap-2 mb-1">
+                    <p className="font-semibold text-navy-900" style={{ fontFamily: "var(--font-display), serif" }}>{r.title}</p>
+                    <Badge variant="outline" className={cn("text-[10px] uppercase",
+                      r.attendanceOpen ? "border-emerald-500/40 text-emerald-700 bg-emerald-50" : "border-gray-400/40 text-gray-700 bg-gray-50"
+                    )}>
+                      {r.attendanceOpen ? t(lang, "dashboard.attendanceOpen") : t(lang, "dashboard.attendanceClosed")}
+                    </Badge>
+                    <Badge variant="outline" className="text-[10px]">
+                      {r.attendanceCount} {lang === "id" ? "absen" : "marked"}
+                    </Badge>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {new Date(r.date).toLocaleString(lang === "id" ? "id-ID" : "en-US", { weekday: "short", day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })} · {r.location}
+                  </p>
+                  {r.notes && <p className="text-xs text-muted-foreground italic mt-1">{r.notes}</p>}
+                </div>
+                <div className="flex gap-2 flex-shrink-0">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className={r.attendanceOpen ? "border-red-400/40 text-red-700 hover:bg-red-50" : "border-emerald-400/40 text-emerald-700 hover:bg-emerald-50"}
+                    onClick={() => toggleAttendance(r.id, r.attendanceOpen)}
+                  >
+                    {r.attendanceOpen ? t(lang, "dashboard.closeAttendance") : t(lang, "dashboard.openAttendance")}
+                  </Button>
+                  <Button size="sm" variant="ghost" className="text-red-600 hover:bg-red-50" onClick={() => del(r.id)}>
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+              </div>
+            </Card>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ---------- Dues manager (admin) ----------
+interface DuesItem {
+  id: string; title: string; description: string; minAmount: number;
+  active: boolean; createdAt: string; paymentCount: number;
+}
+
+function DuesManager() {
+  const { toast } = useToast()
+  const { lang } = useAppStore()
+  const [items, setItems] = useState<DuesItem[]>([])
+  const [loading, setLoading] = useState(true)
+  const [showForm, setShowForm] = useState(false)
+  const [title, setTitle] = useState("")
+  const [description, setDescription] = useState("")
+  const [minAmount, setMinAmount] = useState("")
+  const [submitting, setSubmitting] = useState(false)
+
+  const load = useCallback(async () => {
+    setLoading(true)
+    try {
+      const res = await fetch("/api/dues", { cache: "no-store" })
+      const data = await res.json()
+      setItems(data.items || [])
+    } catch {
+      // ignore
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  useEffect(() => { load() }, [load])
+
+  const create = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!title || !description || !minAmount) {
+      toast({ title: lang === "id" ? "Lengkapi semua field" : "Fill all fields", variant: "destructive" })
+      return
+    }
+    setSubmitting(true)
+    try {
+      const res = await fetch("/api/dues", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title, description, minAmount: Number(minAmount) }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data?.error || "Failed")
+      toast({ title: lang === "id" ? "Iuran dibuat" : "Dues campaign created" })
+      setTitle(""); setDescription(""); setMinAmount("")
+      setShowForm(false)
+      load()
+    } catch (e) {
+      toast({ title: "Error", description: e instanceof Error ? e.message : "Unknown", variant: "destructive" })
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  const toggleActive = async (id: string, current: boolean) => {
+    try {
+      const res = await fetch(`/api/dues/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ active: !current }),
+      })
+      if (!res.ok) throw new Error("Failed")
+      toast({ title: !current ? (lang === "id" ? "Dibuka kembali" : "Reopened") : (lang === "id" ? "Ditutup" : "Closed") })
+      load()
+    } catch (e) {
+      toast({ title: "Error", description: e instanceof Error ? e.message : "Unknown", variant: "destructive" })
+    }
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h3 className="font-semibold text-navy-900" style={{ fontFamily: "var(--font-display), serif" }}>
+          {t(lang, "dashboard.duesManager")}
+        </h3>
+        <Button onClick={() => setShowForm((s) => !s)} className="bg-gold-500 text-navy-950 hover:bg-gold-400">
+          <Wallet className="h-4 w-4 mr-2" />
+          {t(lang, "dashboard.newDues")}
+        </Button>
+      </div>
+
+      {showForm && (
+        <Card className="border-gold-500/30 bg-white p-5">
+          <form onSubmit={create} className="space-y-4">
+            <div>
+              <Label className="text-sm font-medium">{t(lang, "dashboard.duesTitle")}</Label>
+              <Input value={title} onChange={(e) => setTitle(e.target.value)} required className="mt-1" placeholder={lang === "id" ? "Iuran Baju Konser Feb 2027" : "Concert Uniform Feb 2027"} />
+            </div>
+            <div>
+              <Label className="text-sm font-medium">{t(lang, "dashboard.duesDescription")}</Label>
+              <Textarea value={description} onChange={(e) => setDescription(e.target.value)} required rows={2} className="mt-1" placeholder={lang === "id" ? "Iuran untuk pembelian seragam/baju konser..." : "Dues for concert uniform purchase..."} />
+            </div>
+            <div>
+              <Label className="text-sm font-medium">{t(lang, "dashboard.minAmount")}</Label>
+              <Input type="number" min={0} value={minAmount} onChange={(e) => setMinAmount(e.target.value)} required className="mt-1" placeholder="250000" />
+            </div>
+            <div className="flex gap-2">
+              <Button type="submit" disabled={submitting} className="bg-gold-500 text-navy-950 hover:bg-gold-400">
+                {submitting ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <CheckCircle2 className="h-4 w-4 mr-1" />}
+                {t(lang, "dashboard.createDues")}
+              </Button>
+              <Button type="button" variant="outline" onClick={() => setShowForm(false)}>{t(lang, "common.cancel")}</Button>
+            </div>
+          </form>
+        </Card>
+      )}
+
+      {loading ? (
+        <div className="p-10 text-center text-muted-foreground">
+          <Loader2 className="h-6 w-6 animate-spin mx-auto mb-2" />
+          {t(lang, "common.loading")}
+        </div>
+      ) : items.length === 0 ? (
+        <Card className="border-dashed border-2 p-8 text-center text-muted-foreground">
+          <Wallet className="h-8 w-8 mx-auto mb-2 opacity-50" />
+          {lang === "id" ? "Belum ada kampanye iuran." : "No dues campaigns yet."}
+        </Card>
+      ) : (
+        <div className="space-y-2">
+          {items.map((d) => (
+            <Card key={d.id} className="border-border bg-white p-4">
+              <div className="flex flex-col md:flex-row md:items-center gap-3">
+                <div className="flex-1">
+                  <div className="flex flex-wrap items-center gap-2 mb-1">
+                    <p className="font-semibold text-navy-900" style={{ fontFamily: "var(--font-display), serif" }}>{d.title}</p>
+                    <Badge variant="outline" className={cn("text-[10px] uppercase",
+                      d.active ? "border-emerald-500/40 text-emerald-700 bg-emerald-50" : "border-gray-400/40 text-gray-700 bg-gray-50"
+                    )}>
+                      {d.active ? t(lang, "dashboard.active") : t(lang, "dashboard.closed")}
+                    </Badge>
+                    <Badge variant="outline" className="text-[10px]">
+                      {d.paymentCount} {lang === "id" ? "pembayaran" : "payments"}
+                    </Badge>
+                  </div>
+                  <p className="text-xs text-muted-foreground">{d.description}</p>
+                  <p className="text-sm text-navy-900 font-medium mt-1">
+                    {lang === "id" ? "Minimal" : "Min"}: Rp {d.minAmount.toLocaleString("id-ID")}
+                  </p>
+                </div>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className={d.active ? "border-red-400/40 text-red-700 hover:bg-red-50" : "border-emerald-400/40 text-emerald-700 hover:bg-emerald-50"}
+                  onClick={() => toggleActive(d.id, d.active)}
+                >
+                  {d.active ? t(lang, "dashboard.closeDues") : t(lang, "dashboard.reopenDues")}
+                </Button>
+              </div>
+            </Card>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ---------- Dues Payments Verification (admin) ----------
+interface PaymentRow {
+  id: string; amountPaid: number; proofUrl: string; proofType: string;
+  status: string; adminNote?: string | null; paidAt: string; verifiedAt?: string | null;
+  user: { id: string; name: string; email: string; instrument: string; instrumentSection: string };
+  dues: { id: string; title: string; minAmount: number };
+}
+
+function DuesPaymentsManager() {
+  const { toast } = useToast()
+  const { lang } = useAppStore()
+  const [items, setItems] = useState<PaymentRow[]>([])
+  const [loading, setLoading] = useState(true)
+  const [filter, setFilter] = useState<"ALL" | "PENDING" | "VERIFIED" | "REJECTED">("PENDING")
+
+  const load = useCallback(async () => {
+    setLoading(true)
+    try {
+      const url = filter === "ALL" ? "/api/admin/dues-payments" : `/api/admin/dues-payments?status=${filter}`
+      const res = await fetch(url, { cache: "no-store" })
+      const data = await res.json()
+      setItems(data.items || [])
+    } catch {
+      // ignore
+    } finally {
+      setLoading(false)
+    }
+  }, [filter])
+
+  useEffect(() => { load() }, [load])
+
+  const verify = async (id: string, status: "VERIFIED" | "REJECTED") => {
+    let adminNote = ""
+    if (status === "REJECTED") {
+      adminNote = prompt(lang === "id" ? "Alasan penolakan:" : "Rejection reason:") || ""
+      if (!adminNote) return
+    }
+    try {
+      const res = await fetch(`/api/admin/dues-payments/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status, adminNote }),
+      })
+      if (!res.ok) throw new Error("Failed")
+      toast({ title: status === "VERIFIED" ? (lang === "id" ? "Pembayaran terverifikasi" : "Payment verified") : (lang === "id" ? "Pembayaran ditolak" : "Payment rejected") })
+      load()
+    } catch (e) {
+      toast({ title: "Error", description: e instanceof Error ? e.message : "Unknown", variant: "destructive" })
+    }
+  }
+
+  const del = async (id: string) => {
+    if (!confirm(lang === "id" ? "Hapus pembayaran ini?" : "Delete this payment?")) return
+    try {
+      const res = await fetch(`/api/admin/dues-payments/${id}`, { method: "DELETE" })
+      if (!res.ok) throw new Error("Failed")
+      toast({ title: lang === "id" ? "Dihapus" : "Deleted" })
+      load()
+    } catch (e) {
+      toast({ title: "Error", description: e instanceof Error ? e.message : "Unknown", variant: "destructive" })
+    }
+  }
+
+  const statusMeta: Record<string, { label: string; cls: string }> = {
+    PENDING: { label: t(lang, "dashboard.pending"), cls: "border-amber-500/40 text-amber-700 bg-amber-50" },
+    VERIFIED: { label: t(lang, "dashboard.verified"), cls: "border-emerald-500/40 text-emerald-700 bg-emerald-50" },
+    REJECTED: { label: t(lang, "dashboard.rejected"), cls: "border-red-500/40 text-red-700 bg-red-50" },
+  }
+
+  return (
+    <div className="space-y-4">
+      <h3 className="font-semibold text-navy-900" style={{ fontFamily: "var(--font-display), serif" }}>
+        {lang === "id" ? "Verifikasi Pembayaran Iuran" : "Dues Payment Verification"}
+      </h3>
+
+      {/* Filter */}
+      <div className="flex gap-1 bg-navy-50 p-1 rounded-md w-fit">
+        {(["PENDING", "VERIFIED", "REJECTED", "ALL"] as const).map((s) => (
+          <button
+            key={s}
+            onClick={() => setFilter(s)}
+            className={cn("px-3 py-1.5 rounded text-xs font-medium",
+              filter === s ? "bg-navy-900 text-gold-400" : "text-navy-700"
+            )}
+          >
+            {s === "ALL" ? (lang === "id" ? "Semua" : "All") : statusMeta[s].label}
+          </button>
+        ))}
+      </div>
+
+      {loading ? (
+        <div className="p-10 text-center text-muted-foreground">
+          <Loader2 className="h-6 w-6 animate-spin mx-auto mb-2" />
+          {t(lang, "common.loading")}
+        </div>
+      ) : items.length === 0 ? (
+        <Card className="border-dashed border-2 p-8 text-center text-muted-foreground">
+          <Wallet className="h-8 w-8 mx-auto mb-2 opacity-50" />
+          {lang === "id" ? "Belum ada pembayaran." : "No payments yet."}
+        </Card>
+      ) : (
+        <div className="space-y-3">
+          {items.map((p) => (
+            <Card key={p.id} className="border-border bg-white p-4">
+              <div className="flex flex-col md:flex-row gap-4">
+                {/* Proof thumbnail */}
+                <a href={p.proofUrl} target="_blank" rel="noreferrer" className="flex-shrink-0">
+                  { }
+                  <img
+                    src={p.proofUrl}
+                    alt="Payment proof"
+                    className="w-24 h-24 object-cover rounded-md border border-border hover:opacity-80"
+                    onError={(e) => { (e.target as HTMLImageElement).style.display = "none" }}
+                  />
+                </a>
+
+                <div className="flex-1 min-w-0">
+                  <div className="flex flex-wrap items-center gap-2 mb-1">
+                    <p className="font-medium text-navy-900">{p.user.name}</p>
+                    <Badge variant="outline" className={cn("text-[10px] uppercase", statusMeta[p.status].cls)}>
+                      {statusMeta[p.status].label}
+                    </Badge>
+                  </div>
+                  <p className="text-xs text-muted-foreground">{p.dues.title} · {p.user.instrument}</p>
+                  <p className="text-sm text-navy-900 font-medium mt-1">
+                    Rp {p.amountPaid.toLocaleString("id-ID")}
+                    {p.amountPaid < p.dues.minAmount && (
+                      <span className="text-xs text-red-600 ml-2">
+                        ({lang === "id" ? "di bawah min" : "below min"} Rp {p.dues.minAmount.toLocaleString("id-ID")})
+                      </span>
+                    )}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {new Date(p.paidAt).toLocaleDateString(lang === "id" ? "id-ID" : "en-US", { day: "numeric", month: "long", year: "numeric" })}
+                  </p>
+                  {p.adminNote && (
+                    <p className="text-xs text-red-600 italic mt-1">{t(lang, "dashboard.adminNote")}: {p.adminNote}</p>
+                  )}
+                </div>
+
+                <div className="flex flex-col gap-2 flex-shrink-0">
+                  {p.status === "PENDING" && (
+                    <>
+                      <Button size="sm" className="bg-emerald-500 hover:bg-emerald-600 text-white" onClick={() => verify(p.id, "VERIFIED")}>
+                        <CheckCircle2 className="h-3.5 w-3.5 mr-1" />
+                        {lang === "id" ? "Verifikasi" : "Verify"}
+                      </Button>
+                      <Button size="sm" variant="outline" className="border-red-400/40 text-red-700 hover:bg-red-50" onClick={() => verify(p.id, "REJECTED")}>
+                        <X className="h-3.5 w-3.5 mr-1" />
+                        {lang === "id" ? "Tolak" : "Reject"}
+                      </Button>
+                    </>
+                  )}
+                  <a href={p.proofUrl} target="_blank" rel="noreferrer">
+                    <Button size="sm" variant="ghost" className="w-full">
+                      <ExternalLink className="h-3.5 w-3.5 mr-1" />
+                      {t(lang, "dashboard.viewProof")}
+                    </Button>
+                  </a>
+                  <Button size="sm" variant="ghost" className="text-red-600 hover:bg-red-50" onClick={() => del(p.id)}>
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+              </div>
+            </Card>
+          ))}
+        </div>
+      )}
+    </div>
   )
 }
 
