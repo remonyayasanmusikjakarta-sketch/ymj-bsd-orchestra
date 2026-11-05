@@ -8,20 +8,20 @@ import { useAppStore } from "@/lib/store"
 import { cn } from "@/lib/utils"
 import { LANGS, t } from "@/lib/i18n"
 
+// Multi-page navigation — links to separate pages
 const NAV_LINKS = [
-  { id: "about", key: "nav.about" },
-  { id: "sections", key: "nav.sections" },
-  { id: "categories", key: "nav.categories" },
-  { id: "schedule", key: "nav.schedule" },
-  { id: "concert", key: "nav.concert" },
-  { id: "contact", key: "nav.contact" },
+  { href: "/about", key: "nav.about" },
+  { href: "/programs", label: "Programs" },
+  { href: "/join", label: "Join Us" },
+  { href: "/support", label: "Support" },
+  { href: "/faq", label: "FAQ" },
 ]
 
 export function Navbar() {
   const [open, setOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
   const [langOpen, setLangOpen] = useState(false)
-  const { user, openAuth, logoutLocal, setView, triggerScroll, view, lang, setLang } = useAppStore()
+  const { user, openAuth, logoutLocal, setView, view, lang, setLang } = useAppStore()
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8)
@@ -89,13 +89,13 @@ export function Navbar() {
         {/* Desktop nav */}
         <ul className="hidden lg:flex items-center gap-1">
           {NAV_LINKS.map((l) => (
-            <li key={l.id}>
-              <button
-                onClick={() => handleNav(l.id)}
+            <li key={l.href}>
+              <Link
+                href={l.href}
                 className="px-3 py-2 text-sm font-medium text-navy-100 hover:text-gold-400 transition-colors rounded-md hover:bg-white/5"
               >
-                {t(lang, l.key)}
-              </button>
+                {l.key ? t(lang, l.key) : l.label}
+              </Link>
             </li>
           ))}
         </ul>
@@ -210,13 +210,14 @@ export function Navbar() {
         <div className="lg:hidden bg-navy-950/95 backdrop-blur-md border-t border-gold-500/20">
           <ul className="container mx-auto px-4 py-3 flex flex-col gap-1">
             {NAV_LINKS.map((l) => (
-              <li key={l.id}>
-                <button
-                  onClick={() => handleNav(l.id)}
+              <li key={l.href}>
+                <Link
+                  href={l.href}
                   className="block w-full text-left px-3 py-2.5 rounded-md text-navy-100 hover:text-gold-400 hover:bg-white/5"
+                  onClick={() => setOpen(false)}
                 >
-                  {t(lang, l.key)}
-                </button>
+                  {l.key ? t(lang, l.key) : l.label}
+                </Link>
               </li>
             ))}
             <li className="h-px bg-gold-500/20 my-2" />

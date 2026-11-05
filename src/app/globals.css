@@ -230,6 +230,49 @@
       rgba(201, 162, 39, 0.08) 8px
     );
   }
+
+  /* Hide scrollbar for bottom nav (mobile) */
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  /* Mobile: full-screen modals */
+  @media (max-width: 768px) {
+    [role="dialog"] {
+      max-width: 100% !important;
+      width: 100% !important;
+      max-height: 100vh !important;
+      border-radius: 0 !important;
+      margin: 0 !important;
+    }
+    [role="dialog"] > div {
+      max-height: 100vh !important;
+      overflow-y: auto !important;
+    }
+  }
+
+  /* Mobile: prevent horizontal overflow */
+  body {
+    overflow-x: hidden;
+  }
+
+  /* Mobile: better touch targets */
+  @media (max-width: 768px) {
+    button, a {
+      -webkit-tap-highlight-color: transparent;
+    }
+  }
+
+  /* Safe area insets for iOS (PWA) */
+  @media (max-width: 768px) {
+    .pb-safe {
+      padding-bottom: env(safe-area-inset-bottom, 0px);
+    }
+  }
 }
 
 /* ---------- Animations ---------- */

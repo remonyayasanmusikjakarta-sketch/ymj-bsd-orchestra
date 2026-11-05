@@ -33,6 +33,7 @@ import { IuranPanel } from "./IuranPanel"
 import { HistoryPanel } from "./HistoryPanel"
 import { NameTag } from "./NameTag"
 import { CalendarView } from "./CalendarView"
+import { BottomNav } from "./BottomNav"
 
 // ---------- Resource types ----------
 interface SheetMusicItem {
@@ -138,9 +139,10 @@ export function MemberDashboard() {
       </div>
 
       {/* Tabs + content */}
-      <div className="container mx-auto px-4 md:px-6 py-8 md:py-10 max-w-6xl">
+      <div className="container mx-auto px-4 md:px-6 py-6 md:py-10 max-w-6xl pb-20 lg:pb-10">
         <Tabs value={tab} onValueChange={setTab}>
-          <TabsList className="grid w-full grid-cols-2 md:grid-cols-8 gap-1 bg-white border border-border h-auto p-1">
+          {/* Desktop tabs — hidden on mobile */}
+          <TabsList className="hidden lg:grid w-full grid-cols-8 gap-1 bg-white border border-border h-auto p-1">
             <TabTrigger value="library" icon={<FileMusic className="h-4 w-4" />} label={t(lang, "dashboard.sheetMusic")} />
             <TabTrigger value="whatsapp" icon={<MessageCircle className="h-4 w-4" />} label={t(lang, "dashboard.whatsapp")} />
             <TabTrigger value="announcements" icon={<CalendarDays className="h-4 w-4" />} label={t(lang, "dashboard.schedule")} />
@@ -181,6 +183,9 @@ export function MemberDashboard() {
           )}
         </Tabs>
       </div>
+
+      {/* Mobile bottom navigation */}
+      <BottomNav activeTab={tab} onTabChange={setTab} isAdmin={user.role === "ADMIN"} />
     </main>
   )
 }
