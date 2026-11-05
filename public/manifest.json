@@ -1,0 +1,33 @@
+{
+  "name": "YMJ BSD Community Orchestra",
+  "short_name": "YMJ BSD",
+  "description": "Open Recruitment — Become a Founding Member of YMJ BSD Community Orchestra. Strings, Woodwinds, Brass & Percussion. Saturday 14.00–17.00 WIB at YMJ BSD Campus. Target concert: February 2027.",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0A1F44",
+  "theme_color": "#C9A227",
+  "primary_color": "#0A1F44",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    }
+  ],
+  "categories": ["music", "education", "entertainment"],
+  "lang": "id",
+  "dir": "ltr"
+}

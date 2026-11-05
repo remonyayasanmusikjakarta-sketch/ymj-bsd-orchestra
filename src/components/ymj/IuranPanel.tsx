@@ -181,30 +181,31 @@ export function IuranPanel({ user }: { user: UserProfile }) {
                         {lang === "id" ? "Minimal:" : "Minimum:"} <strong>Rp {d.minAmount.toLocaleString("id-ID")}</strong>
                       </span>
                     </div>
-                  </div>
-                  <div className="flex-shrink-0">
-                    {myPay ? (
-                      <div className="text-center space-y-2">
+                    {/* Show payment status if member already paid */}
+                    {myPay && (
+                      <div className="mt-3 flex flex-wrap items-center gap-2 p-2 rounded-md bg-navy-50/50">
                         <Badge variant="outline" className={cn("text-xs", PAYMENT_STATUS_META[myPay.status]?.cls)}>
                           {PAYMENT_STATUS_META[myPay.status]?.icon}
                           <span className="ml-1">{t(lang, `dashboard.${PAYMENT_STATUS_META[myPay.status]?.label}`)}</span>
                         </Badge>
-                        <p className="text-xs text-muted-foreground">
-                          Rp {myPay.amountPaid.toLocaleString("id-ID")}
-                        </p>
+                        <span className="text-xs text-muted-foreground">
+                          Rp {myPay.amountPaid.toLocaleString("id-ID")} · {new Date(myPay.paidAt).toLocaleDateString(lang === "id" ? "id-ID" : "en-US", { day: "numeric", month: "short", year: "numeric" })}
+                        </span>
                         {myPay.adminNote && (
-                          <p className="text-xs text-red-600 italic">{myPay.adminNote}</p>
+                          <p className="text-xs text-red-600 italic w-full mt-1">{t(lang, "dashboard.adminNote")}: {myPay.adminNote}</p>
                         )}
                       </div>
-                    ) : (
-                      <Button
-                        className="bg-gold-500 text-navy-950 hover:bg-gold-400 font-semibold"
-                        onClick={() => { setPayForDues(d); setAmount(String(d.minAmount)); setSubmitError(null) }}
-                      >
-                        <Wallet className="h-4 w-4 mr-2" />
-                        {t(lang, "dashboard.payNow")}
-                      </Button>
                     )}
+                  </div>
+                  <div className="flex-shrink-0">
+                    {/* Pay Now button ALWAYS shows — members can pay multiple times (installments, additional donations) */}
+                    <Button
+                      className="bg-gold-500 text-navy-950 hover:bg-gold-400 font-semibold"
+                      onClick={() => { setPayForDues(d); setAmount(String(d.minAmount)); setSubmitError(null) }}
+                    >
+                      <Wallet className="h-4 w-4 mr-2" />
+                      {t(lang, "dashboard.payNow")}
+                    </Button>
                   </div>
                 </div>
               </Card>
